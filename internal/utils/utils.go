@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/golang/protobuf/ptypes/struct"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -49,7 +48,7 @@ func StructToProtoStruct(m map[string]interface{}) (*structpb.Struct, error) {
 }
 
 // ProtoStructToMap convierte un protobuf struct a un mapa
-func ProtoStructToMap(s *struct.Struct) map[string]interface{} {
+func ProtoStructToMap(s *structpb.Struct) map[string]interface{} {
 	if s == nil {
 		return nil
 	}
@@ -61,19 +60,19 @@ func ProtoStructToMap(s *struct.Struct) map[string]interface{} {
 }
 
 // ProtoValueToInterface convierte un protobuf value a una interfaz
-func ProtoValueToInterface(v *struct.Value) interface{} {
-	switch v.Kind.(type) {
-	case *struct.Value_NullValue:
+func ProtoValueToInterface(v *structpb.Value) interface{} {
+	switch x := v.Kind.(type) {
+	case *structpb.Value_NullValue:
 		return nil
-	case *struct.Value_NumberValue:
+	case *structpb.Value_NumberValue:
 		return v.GetNumberValue()
-	case *struct.Value_StringValue:
+	case *structpb.Value_StringValue:
 		return v.GetStringValue()
-	case *struct.Value_BoolValue:
+	case *structpb.Value_BoolValue:
 		return v.GetBoolValue()
-	case *struct.Value_StructValue:
+	case *structpb.Value_StructValue:
 		return ProtoStructToMap(v.GetStructValue())
-	case *struct.Value_ListValue:
+	case *structpb.Value_ListValue:
 		list := v.GetListValue()
 		result := make([]interface{}, len(list.Values))
 		for i, v := range list.Values {

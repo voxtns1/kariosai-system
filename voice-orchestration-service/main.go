@@ -17,7 +17,6 @@ import (
 	speech "cloud.google.com/go/speech/apiv1"
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
-	"github.com/golang/protobuf/ptypes/struct"
 	"github.com/twilio/twilio-go"
 	dialogflow "google.golang.org/api/dialogflow/v3"
 	"google.golang.org/api/option"

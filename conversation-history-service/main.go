@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
@@ -111,113 +110,113 @@ func updateVectorIndex(ctx context.Context, payload *models.FullTranscriptPayloa
 	// Nota: Esta es una implementación conceptual.
 	// En un entorno de producción, se utilizaría la API de Vertex AI Vector Search para actualizar el índice.
 	// Para simplificar, no hacemos nada en el MVP.
-	
+
 	// En un entorno real, se utilizaría código como el siguiente:
 	/*
-	client, err := vectorsearch.NewIndexEndpointServiceClient(ctx)
-	if err != nil {
-		return fmt.Errorf("error al crear el cliente de Vector Search: %v", err)
-	}
-	defer client.Close()
+		client, err := vectorsearch.NewIndexEndpointServiceClient(ctx)
+		if err != nil {
+			return fmt.Errorf("error al crear el cliente de Vector Search: %v", err)
+		}
+		defer client.Close()
 
-	// Preparar los datapoints para cada entrada de la transcripción
-	datapoints := make([]*vectorsearchpb.Datapoint, 0, len(payload.TranscriptEntries))
-	for i, entry := range payload.TranscriptEntries {
-		if len(entry.Embedding) == 0 {
-			continue
+		// Preparar los datapoints para cada entrada de la transcripción
+		datapoints := make([]*vectorsearchpb.Datapoint, 0, len(payload.TranscriptEntries))
+		for i, entry := range payload.TranscriptEntries {
+			if len(entry.Embedding) == 0 {
+				continue
+			}
+
+			datapoint := &vectorsearchpb.Datapoint{
+				DatapointId: fmt.Sprintf("%s-%d", payload.CallSid, i),
+				FeatureVector: entry.Embedding,
+				Metadata: map[string]*structpb.Value{
+					"call_sid": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: payload.CallSid,
+						},
+					},
+					"tenant_id": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: payload.TenantID,
+						},
+					},
+					"from_number": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: payload.FromNumber,
+						},
+					},
+					"speaker": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: entry.Speaker,
+						},
+					},
+					"text": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: entry.Text,
+						},
+					},
+					"timestamp": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: entry.Timestamp.Format(time.RFC3339),
+						},
+					},
+				},
+			}
+			datapoints = append(datapoints, datapoint)
 		}
 
-		datapoint := &vectorsearchpb.Datapoint{
-			DatapointId: fmt.Sprintf("%s-%d", payload.CallSid, i),
-			FeatureVector: entry.Embedding,
-			Metadata: map[string]*structpb.Value{
-				"call_sid": {
-					Kind: &structpb.Value_StringValue{
-						StringValue: payload.CallSid,
+		// Si hay un embedding para toda la conversación, agregarlo también
+		if len(payload.Embedding) > 0 {
+			datapoint := &vectorsearchpb.Datapoint{
+				DatapointId: fmt.Sprintf("%s-full", payload.CallSid),
+				FeatureVector: payload.Embedding,
+				Metadata: map[string]*structpb.Value{
+					"call_sid": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: payload.CallSid,
+						},
+					},
+					"tenant_id": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: payload.TenantID,
+						},
+					},
+					"from_number": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: payload.FromNumber,
+						},
+					},
+					"is_full_conversation": {
+						Kind: &structpb.Value_BoolValue{
+							BoolValue: true,
+						},
+					},
+					"text": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: "Conversación completa: " + strings.Join(getAllTexts(payload.TranscriptEntries), " "),
+						},
+					},
+					"timestamp": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: payload.StartTimestamp.Format(time.RFC3339),
+						},
 					},
 				},
-				"tenant_id": {
-					Kind: &structpb.Value_StringValue{
-						StringValue: payload.TenantID,
-					},
-				},
-				"from_number": {
-					Kind: &structpb.Value_StringValue{
-						StringValue: payload.FromNumber,
-					},
-				},
-				"speaker": {
-					Kind: &structpb.Value_StringValue{
-						StringValue: entry.Speaker,
-					},
-				},
-				"text": {
-					Kind: &structpb.Value_StringValue{
-						StringValue: entry.Text,
-					},
-				},
-				"timestamp": {
-					Kind: &structpb.Value_StringValue{
-						StringValue: entry.Timestamp.Format(time.RFC3339),
-					},
-				},
-			},
+			}
+			datapoints = append(datapoints, datapoint)
 		}
-		datapoints = append(datapoints, datapoint)
-	}
 
-	// Si hay un embedding para toda la conversación, agregarlo también
-	if len(payload.Embedding) > 0 {
-		datapoint := &vectorsearchpb.Datapoint{
-			DatapointId: fmt.Sprintf("%s-full", payload.CallSid),
-			FeatureVector: payload.Embedding,
-			Metadata: map[string]*structpb.Value{
-				"call_sid": {
-					Kind: &structpb.Value_StringValue{
-						StringValue: payload.CallSid,
-					},
-				},
-				"tenant_id": {
-					Kind: &structpb.Value_StringValue{
-						StringValue: payload.TenantID,
-					},
-				},
-				"from_number": {
-					Kind: &structpb.Value_StringValue{
-						StringValue: payload.FromNumber,
-					},
-				},
-				"is_full_conversation": {
-					Kind: &structpb.Value_BoolValue{
-						BoolValue: true,
-					},
-				},
-				"text": {
-					Kind: &structpb.Value_StringValue{
-						StringValue: "Conversación completa: " + strings.Join(getAllTexts(payload.TranscriptEntries), " "),
-					},
-				},
-				"timestamp": {
-					Kind: &structpb.Value_StringValue{
-						StringValue: payload.StartTimestamp.Format(time.RFC3339),
-					},
-				},
-			},
+		// Actualizar el índice
+		req := &vectorsearchpb.UpsertDatapointsRequest{
+			IndexEndpoint: fmt.Sprintf("projects/%s/locations/%s/indexEndpoints/%s", projectID, region, vertexAIVectorSearchEndpoint),
+			DeployedIndexId: vertexAIVectorSearchIndex,
+			Datapoints: datapoints,
 		}
-		datapoints = append(datapoints, datapoint)
-	}
 
-	// Actualizar el índice
-	req := &vectorsearchpb.UpsertDatapointsRequest{
-		IndexEndpoint: fmt.Sprintf("projects/%s/locations/%s/indexEndpoints/%s", projectID, region, vertexAIVectorSearchEndpoint),
-		DeployedIndexId: vertexAIVectorSearchIndex,
-		Datapoints: datapoints,
-	}
-
-	_, err = client.UpsertDatapoints(ctx, req)
-	if err != nil {
-		return fmt.Errorf("error al actualizar el índice vectorial: %v", err)
-	}
+		_, err = client.UpsertDatapoints(ctx, req)
+		if err != nil {
+			return fmt.Errorf("error al actualizar el índice vectorial: %v", err)
+		}
 	*/
 
 	return nil
