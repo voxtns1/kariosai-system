@@ -1,0 +1,61 @@
+{
+  "name": "kairosia",
+  "version": "1.0.0",
+  "description": "Sistema de atención telefónica conversacional basado en IA",
+  "main": "index.js",
+  "scripts": {
+    "setup": "npm run setup:env && npm run setup:deps",
+    "setup:env": "cp .env.example .env && echo 'Archivo .env creado. Por favor, actualiza las variables con tus valores.'",
+    "setup:deps": "go mod download && cd voice-orchestration-service && go mod download && cd ../conversation-history-service && go mod download",
+    "build": "npm run build:voice && npm run build:history",
+    "build:voice": "cd voice-orchestration-service && go build -o bin/voice-orchestration-service",
+    "build:history": "cd conversation-history-service && go build -o bin/conversation-history-service",
+    "docker:build": "npm run docker:build:voice && npm run docker:build:history",
+    "docker:build:voice": "docker build -t kairosia-voice-orchestration-service ./voice-orchestration-service",
+    "docker:build:history": "docker build -t kairosia-conversation-history-service ./conversation-history-service",
+    "docker:run": "npm run docker:run:voice && npm run docker:run:history",
+    "docker:run:voice": "docker run -p 8080:8080 --env-file .env kairosia-voice-orchestration-service",
+    "docker:run:history": "docker run -p 8081:8080 --env-file .env kairosia-conversation-history-service",
+    "terraform:init": "cd terraform && terraform init",
+    "terraform:plan": "cd terraform && terraform plan",
+    "terraform:apply": "cd terraform && terraform apply",
+    "terraform:destroy": "cd terraform && terraform destroy",
+    "gcp:setup": "gcloud auth login && gcloud config set project $GCP_PROJECT_ID && npm run gcp:enable-apis",
+    "gcp:enable-apis": "gcloud services enable compute.googleapis.com containerregistry.googleapis.com run.googleapis.com dialogflow.googleapis.com speech.googleapis.com texttospeech.googleapis.com firestore.googleapis.com bigquery.googleapis.com aiplatform.googleapis.com iam.googleapis.com",
+    "gcp:build-push": "npm run gcp:build-push:voice && npm run gcp:build-push:history",
+    "gcp:build-push:voice": "gcloud builds submit --tag gcr.io/$GCP_PROJECT_ID/voice-orchestration-service:latest ./voice-orchestration-service",
+    "gcp:build-push:history": "gcloud builds submit --tag gcr.io/$GCP_PROJECT_ID/conversation-history-service:latest ./conversation-history-service",
+    "deploy": "npm run terraform:apply",
+    "deploy:manual": "npm run gcp:build-push && npm run gcp:deploy",
+    "gcp:deploy": "npm run gcp:deploy:voice && npm run gcp:deploy:history",
+    "gcp:deploy:voice": "gcloud run deploy voice-orchestration-service --image gcr.io/$GCP_PROJECT_ID/voice-orchestration-service:latest --platform managed --region $GCP_REGION --allow-unauthenticated",
+    "gcp:deploy:history": "gcloud run deploy conversation-history-service --image gcr.io/$GCP_PROJECT_ID/conversation-history-service:latest --platform managed --region $GCP_REGION --allow-unauthenticated",
+    "local:run": "npm run local:run:voice & npm run local:run:history",
+    "local:run:voice": "cd voice-orchestration-service && go run main.go",
+    "local:run:history": "cd conversation-history-service && go run main.go",
+    "test": "go test ./...",
+    "clean": "rm -rf voice-orchestration-service/bin conversation-history-service/bin"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/kairosia.git"
+  },
+  "keywords": [
+    "ai",
+    "conversational",
+    "voice",
+    "twilio",
+    "dialogflow",
+    "gcp",
+    "golang"
+  ],
+  "author": "voxtns",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yourusername/kairosia/issues"
+  },
+  "homepage": "https://github.com/yourusername/kairosia#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
